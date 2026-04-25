@@ -1,4 +1,4 @@
-import { useEffect, useRef, Suspense } from 'react';
+import { useEffect, useRef, Suspense, useState } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -9,11 +9,12 @@ import { SettledBlocks } from './components/SettledBlocks';
 import { ActivePiece } from './components/ActivePiece';
 import { ParticleSystem } from './components/ParticleSystem';
 import { useGameStore } from './store/gameStore';
-import { ROWS, RADIUS } from './constants';
+import { BLOCK_SIZE } from './constants';
 import './index.css';
 
 function GameBoard() {
   const targetRotation = useGameStore(state => state.targetRotation);
+  const rows = useGameStore(state => state.rows);
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
@@ -29,7 +30,7 @@ function GameBoard() {
 
   return (
     // Shift the entire game board down to create headroom for spawning
-    <group position={[0, -ROWS / 8, 0]}>
+    <group position={[0, -rows / 8, 0]}>
       {/* The cylinder and settled blocks spin smoothly based on drag */}
       <group ref={groupRef}>
         <CylinderGrid />
@@ -58,6 +59,14 @@ function App() {
   const toggleMute = useGameStore(state => state.toggleMute);
   const score = useGameStore(state => state.score);
   const linesCleared = useGameStore(state => state.linesCleared);
+  const columns = useGameStore(state => state.columns);
+  const rows = useGameStore(state => state.rows);
+  const startingFill = useGameStore(state => state.startingFill);
+  const restartGame = useGameStore(state => state.restartGame);
+  const RADIUS = columns / (2 * Math.PI);
+
+  const [selectedCols, setSelectedCols] = useState(columns);
+  const [selectedFill, setSelectedFill] = useState(startingFill);
 
   const speedMultiplier = 1 + Math.min(0.5, Math.floor(linesCleared / 10) * 0.01);
   const dropInterval = 1000 / speedMultiplier;
@@ -127,7 +136,7 @@ function App() {
           {/* Piece Follow Light (Highlight the active piece texture) */}
           {activePiece && (
             <pointLight 
-              position={[0, (activePiece.row - 2) - (ROWS / 2) + 4, RADIUS + 4]} 
+              position={[0, (activePiece.row - 2) - (rows / 2) + 4, RADIUS + 4]} 
               intensity={5.0} 
               distance={25}
               color={activePiece.color}
@@ -138,13 +147,13 @@ function App() {
           <directionalLight position={[-15, 10, -10]} intensity={1.2} color="#5599ff" />
           
           {/* Warm Bottom Glow */}
-          <pointLight position={[0, -ROWS/2, 0]} intensity={1.2} color="#ffaa44" distance={30} />
+          <pointLight position={[0, -rows/2, 0]} intensity={1.2} color="#ffaa44" distance={30} />
 
           <Suspense fallback={null}>
             <group position={[0, 4, 0]}>
               <GameBoard />
               <ContactShadows
-                position={[0, -ROWS / 2 - 0.1, 0]}
+                position={[0, -rows / 2 - 0.1, 0]}
                 opacity={0.3}
                 scale={40}
                 blur={2.5}
@@ -154,55 +163,8 @@ function App() {
           </Suspense>
         </Canvas>
 
-        {/* UI Overlays */}
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          zIndex: 100,
-          pointerEvents: 'auto'
-        }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); togglePause(); }}
-            style={{
-              padding: '10px 20px',
-              fontSize: '18px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              backdropFilter: 'blur(5px)',
-              textTransform: 'uppercase',
-              letterSpacing: '2px',
-              fontWeight: 'bold',
-              transition: 'all 0.2s',
-              marginRight: '10px'
-            }}
-          >
-            {paused ? 'Resume' : 'Pause'}
-          </button>
+        {/* UI Overlays are now handled inside the Control Panel below */}
 
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-            style={{
-              padding: '10px 20px',
-              fontSize: '18px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              backdropFilter: 'blur(5px)',
-              textTransform: 'uppercase',
-              letterSpacing: '2px',
-              fontWeight: 'bold',
-              transition: 'all 0.2s'
-            }}
-          >
-            {isMuted ? 'Unmute' : 'Mute'}
-          </button>
-        </div>
 
         {paused && (
           <div style={{
@@ -265,6 +227,109 @@ function App() {
           }}>
             <span>Lines: <strong>{linesCleared}</strong></span>
             <span>Speed: <strong>+{((speedMultiplier - 1) * 100).toFixed(0)}%</strong></span>
+          </div>
+        </div>
+
+        {/* Control Panel (Settings + Buttons) */}
+        <div style={{
+          position: 'absolute',
+          top: '30px',
+          right: '30px',
+          color: 'white',
+          fontFamily: "'Outfit', 'Inter', sans-serif",
+          zIndex: 100,
+          background: 'rgba(0, 0, 0, 0.4)',
+          padding: '20px',
+          borderRadius: '16px',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '15px',
+          minWidth: '200px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' }}>
+            <span style={{ fontSize: '14px', opacity: 0.7, fontWeight: 'bold' }}>Cylinder Size</span>
+            <select 
+              value={selectedCols} 
+              onChange={(e) => setSelectedCols(parseInt(e.target.value))}
+              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', padding: '5px 8px' }}
+            >
+              <option value="32">Small (32)</option>
+              <option value="64">Standard (64)</option>
+              <option value="96">Large (96)</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' }}>
+            <span style={{ fontSize: '14px', opacity: 0.7, fontWeight: 'bold' }}>Starting Fill</span>
+            <select 
+              value={selectedFill} 
+              onChange={(e) => setSelectedFill(e.target.value as any)}
+              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', padding: '5px 8px' }}
+            >
+              <option value="none">Empty</option>
+              <option value="v-shape">V-Shape</option>
+              <option value="random">Randomized</option>
+            </select>
+          </div>
+
+          <button 
+            onClick={() => restartGame(selectedCols, 25, selectedFill)}
+            style={{
+              padding: '12px',
+              background: '#44aaff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              boxShadow: '0 4px 15px rgba(68, 170, 255, 0.3)'
+            }}
+          >
+            New Game
+          </button>
+
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '5px 0' }} />
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              onClick={(e) => { e.stopPropagation(); togglePause(); }}
+              style={{
+                flex: 1,
+                padding: '10px',
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+              }}
+            >
+              {paused ? 'Resume' : 'Pause'}
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+              style={{
+                flex: 1,
+                padding: '10px',
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+              }}
+            >
+              {isMuted ? 'Unmute' : 'Mute'}
+            </button>
           </div>
         </div>
       </div>

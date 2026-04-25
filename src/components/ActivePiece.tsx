@@ -1,12 +1,15 @@
 import { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
-import { ROWS, COLS, RADIUS, BLOCK_SIZE } from '../constants';
+import { BLOCK_SIZE } from '../constants';
 
 import { useTexture } from '@react-three/drei';
 
 export function ActivePiece() {
   const activePiece = useGameStore(state => state.activePiece);
+  const columns = useGameStore(state => state.columns);
+  const rows = useGameStore(state => state.rows);
+  const RADIUS = columns / (2 * Math.PI);
   const stoneTexture = useTexture('/stone_texture.png');
 
   useEffect(() => {
@@ -27,18 +30,18 @@ export function ActivePiece() {
         if (activePiece.shape[y][x]) {
           const centerOffset = -Math.floor(activePiece.shape[0].length / 2);
           const visualCol = x + centerOffset; 
-          const angle = (visualCol / COLS) * Math.PI * 2;
+          const angle = (visualCol / columns) * Math.PI * 2;
           
           const px = RADIUS * Math.sin(angle);
           const pz = RADIUS * Math.cos(angle);
-          const py = (activePiece.row - y) - (ROWS / 2);
+          const py = (activePiece.row - y) - (rows / 2);
           
           list.push({ x: px, y: py, z: pz, angle, color: activePiece.color });
         }
       }
     }
     return list;
-  }, [activePiece]);
+  }, [activePiece, columns, rows, RADIUS]);
 
   if (!activePiece) return null;
 

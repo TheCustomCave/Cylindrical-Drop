@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
-import { ROWS, COLS, RADIUS, BLOCK_SIZE } from '../constants';
+import { BLOCK_SIZE } from '../constants';
 import { TETROMINOS } from '../utils/tetrominos';
 
 const tempObject = new THREE.Object3D();
@@ -12,6 +12,9 @@ import { useTexture } from '@react-three/drei';
 export function SettledBlocks() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const grid = useGameStore(state => state.grid);
+  const columns = useGameStore(state => state.columns);
+  const rows = useGameStore(state => state.rows);
+  const RADIUS = columns / (2 * Math.PI);
   const stoneTexture = useTexture('/stone_texture.png');
 
   useEffect(() => {
@@ -23,8 +26,8 @@ export function SettledBlocks() {
 
   const settledBlocks = useMemo(() => {
     const list: { r: number; c: number; color: string }[] = [];
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < columns; c++) {
         const type = grid[r][c];
         if (type) {
           list.push({ r, c, color: TETROMINOS[type].color });
@@ -32,7 +35,7 @@ export function SettledBlocks() {
       }
     }
     return list;
-  }, [grid]);
+  }, [grid, rows, columns]);
 
   useEffect(() => {
     if (!meshRef.current) return;
@@ -40,10 +43,10 @@ export function SettledBlocks() {
     meshRef.current.count = settledBlocks.length;
 
     settledBlocks.forEach((b, i) => {
-      const angle = (b.c / COLS) * Math.PI * 2;
+      const angle = (b.c / columns) * Math.PI * 2;
       const x = RADIUS * Math.sin(angle);
       const z = RADIUS * Math.cos(angle);
-      const y = b.r - (ROWS / 2);
+      const y = b.r - (rows / 2);
 
       tempObject.position.set(x, y, z);
       tempObject.rotation.set(0, angle, 0);
@@ -62,7 +65,7 @@ export function SettledBlocks() {
   }, [settledBlocks]);
 
   return (
-    <instancedMesh ref={meshRef} args={[null as any, null as any, ROWS * COLS]}>
+    <instancedMesh ref={meshRef} args={[null as any, null as any, rows * columns]}>
       <boxGeometry args={[BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE]} />
       <meshStandardMaterial 
         map={stoneTexture} 

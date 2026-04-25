@@ -2,7 +2,6 @@ import { useState, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
-import { ROWS, RADIUS } from '../constants';
 
 const tempObj = new THREE.Object3D();
 
@@ -11,6 +10,10 @@ function Explosion({ rowId, rowNum, onComplete }: { rowId: number, rowNum: numbe
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
   const life = useRef(1.0);
   const isDead = useRef(false);
+  
+  const columns = useGameStore(state => state.columns);
+  const rows = useGameStore(state => state.rows);
+  const RADIUS = columns / (2 * Math.PI);
   
   // Create particles erupting from the cleared row
   const particles = useMemo(() => {
@@ -21,7 +24,7 @@ function Explosion({ rowId, rowNum, onComplete }: { rowId: number, rowNum: numbe
       const x = r * Math.sin(angle);
       const z = r * Math.cos(angle);
       // Row physical Y
-      const y = rowNum - (ROWS / 2) + (Math.random() - 0.5);
+      const y = rowNum - (rows / 2) + (Math.random() - 0.5);
       
       // Velocity outward and upward
       const vx = x * 0.5 + (Math.random() - 0.5) * 2;

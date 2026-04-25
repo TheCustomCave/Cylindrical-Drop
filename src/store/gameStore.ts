@@ -30,45 +30,76 @@ interface GameState {
   toggleMute: () => void;
   score: number;
   linesCleared: number;
+  columns: number;
+  rows: number;
+  startingFill: 'v-shape' | 'none' | 'random';
+  restartGame: (cols?: number, rows?: number, fill?: 'v-shape' | 'none' | 'random') => void;
 }
 
-const getBlockCol = (pieceCol: number, shape: number[][], x: number) => {
+const getBlockCol = (pieceCol: number, shape: number[][], x: number, cols: number) => {
   const centerOffset = -Math.floor(shape[0].length / 2);
-  return (((pieceCol + x + centerOffset) % COLS) + COLS) % COLS;
+  return (((pieceCol + x + centerOffset) % cols) + cols) % cols;
 };
 
 const checkCollision = (piece: ActivePiece, grid: GridCell[][], dr = 0, targetCol?: number) => {
+  const rows = grid.length;
+  const cols = grid[0].length;
   for (let y = 0; y < piece.shape.length; y++) {
     for (let x = 0; x < piece.shape[y].length; x++) {
       if (piece.shape[y][x]) {
         const r = piece.row - y + dr;
-        const c = getBlockCol(targetCol !== undefined ? targetCol : piece.col, piece.shape, x);
+        const c = getBlockCol(targetCol !== undefined ? targetCol : piece.col, piece.shape, x, cols);
 
         // Hit the bottom floor
         if (r < 0) return true;
         // Hit another settled block
-        if (r < ROWS && grid[r][c] !== null) return true;
+        if (r < rows && grid[r][c] !== null) return true;
       }
     }
   }
   return false;
 };
 
-const generateVGrid = () => {
-  return Array.from({ length: ROWS }, (_, r) => {
-    return Array.from({ length: COLS }, (_, c) => {
-      // Distance from front center (col 0 or 64)
-      const distFromFront = Math.min(c, COLS - c);
-      // Slope: 0 height at front, rises by 1 every 2.5 columns towards the back
-      const height = Math.floor(distFromFront / 2.5);
-      // Use 'L' as a placeholder for a settled block type
-      return r < height ? 'L' : null;
+const generateInitialGrid = (rows: number, cols: number, fill: 'v-shape' | 'none' | 'random') => {
+  return Array.from({ length: rows }, (_, r) => {
+    return Array.from({ length: cols }, (_, c) => {
+      if (fill === 'none') return null;
+      if (fill === 'v-shape') {
+        const distFromFront = Math.min(c, cols - c);
+        // Even Steeper V: rises by 1 every 0.8 columns
+        const height = Math.floor(distFromFront / 0.8);
+        return r < height ? 'L' : null;
+      }
+      if (fill === 'random') {
+        // Randomly populate, then we will apply 'gravity' in the next step
+        if (r < 15) return Math.random() > 0.5 ? 'L' : null;
+      }
+      return null;
     });
   });
+
+  if (fill === 'random') {
+    // Simple cascading gravity for the initial random fill
+    for (let c = 0; c < cols; c++) {
+      let writeRow = 0;
+      for (let r = 0; r < rows; r++) {
+        if (grid[r][c] !== null) {
+          const type = grid[r][c];
+          grid[r][c] = null;
+          grid[writeRow][c] = type;
+          writeRow++;
+        }
+      }
+    }
+  }
+  return grid;
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
-  grid: generateVGrid(),
+  columns: COLS,
+  rows: ROWS,
+  startingFill: 'v-shape',
+  grid: generateInitialGrid(ROWS, COLS, 'v-shape'),
   activePiece: null,
   targetRotation: 0,
   explosions: [],
@@ -76,6 +107,23 @@ export const useGameStore = create<GameState>((set, get) => ({
   isMuted: false,
   score: 0,
   linesCleared: 0,
+
+  restartGame: (cols, rows, fill) => set(state => {
+    const newCols = cols ?? state.columns;
+    const newRows = rows ?? state.rows;
+    const newFill = fill ?? state.startingFill;
+    return {
+      columns: newCols,
+      rows: newRows,
+      startingFill: newFill,
+      grid: generateInitialGrid(newRows, newCols, newFill),
+      activePiece: null,
+      score: 0,
+      linesCleared: 0,
+      targetRotation: 0,
+      explosions: []
+    };
+  }),
 
   toggleMute: () => set(state => ({ isMuted: !state.isMuted })),
   togglePause: () => set(state => ({ paused: !state.paused })),
@@ -102,7 +150,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           type: piece.type,
           shape: finalShape,
           color: piece.color,
-          row: ROWS - 1, 
+          row: state.rows - 1, 
           col: spawnCol,
         }
       };
@@ -123,11 +171,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     let collision = checkCollision(testPiece, state.grid, 0, kickedCol);
     
     if (collision) {
-      kickedCol = (state.activePiece.col - 1 + COLS) % COLS;
+      kickedCol = (state.activePiece.col - 1 + state.columns) % state.columns;
       collision = checkCollision(testPiece, state.grid, 0, kickedCol);
     }
     if (collision) {
-      kickedCol = (state.activePiece.col + 1) % COLS;
+      kickedCol = (state.activePiece.col + 1) % state.columns;
       collision = checkCollision(testPiece, state.grid, 0, kickedCol);
     }
 
@@ -142,11 +190,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   rotateByOneColumn: (dir: 1 | -1) => set((state) => {
     if (state.paused) return state;
-    const anglePerCol = (Math.PI * 2) / COLS;
+    const anglePerCol = (Math.PI * 2) / state.columns;
     const newTargetRotation = state.targetRotation + dir * anglePerCol;
     
     const newColShift = Math.round(-newTargetRotation / anglePerCol);
-    const newCol = ((newColShift % COLS) + COLS) % COLS;
+    const newCol = ((newColShift % state.columns) + state.columns) % state.columns;
 
     // Check collision for the new column
     if (state.activePiece && checkCollision(state.activePiece, state.grid, 0, newCol)) {
@@ -164,8 +212,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const sensitivity = 0.01;
     let newTargetRotation = state.targetRotation + deltaX * sensitivity;
     
-    const anglePerCol = (Math.PI * 2) / COLS;
-
+    const anglePerCol = (Math.PI * 2) / state.columns;
+    
     if (!isDragging) {
       // Snap to the absolute nearest column boundary
       newTargetRotation = Math.round(newTargetRotation / anglePerCol) * anglePerCol;
@@ -180,8 +228,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const idealRotation = -currentColShift * anglePerCol;
 
     // Determine absolute adjacent columns
-    const leftCol = (((currentColShift - 1) % COLS) + COLS) % COLS;
-    const rightCol = (((currentColShift + 1) % COLS) + COLS) % COLS;
+    const leftCol = (((currentColShift - 1) % state.columns) + state.columns) % state.columns;
+    const rightCol = (((currentColShift + 1) % state.columns) + state.columns) % state.columns;
 
     const blockedLeft = checkCollision(state.activePiece, state.grid, 0, leftCol);
     const blockedRight = checkCollision(state.activePiece, state.grid, 0, rightCol);
@@ -196,7 +244,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Determine the new logical column based on the TARGET rotation
     const newColShift = Math.round(-newTargetRotation / anglePerCol);
-    const newCol = ((newColShift % COLS) + COLS) % COLS;
+    const newCol = ((newColShift % state.columns) + state.columns) % state.columns;
 
     return {
       targetRotation: newTargetRotation,
@@ -217,8 +265,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         for (let x = 0; x < state.activePiece.shape[y].length; x++) {
           if (state.activePiece.shape[y][x]) {
             const r = state.activePiece.row - y;
-            const c = getBlockCol(state.activePiece.col, state.activePiece.shape, x);
-            if (r >= 0 && r < ROWS) {
+            const c = getBlockCol(state.activePiece.col, state.activePiece.shape, x, state.columns);
+            if (r >= 0 && r < state.rows) {
               newGrid[r][c] = state.activePiece.type;
             }
           }
@@ -244,35 +292,35 @@ export const useGameStore = create<GameState>((set, get) => ({
         const bursts = clearedIndices.map(r => ({ id: Date.now() + Math.random(), row: r }));
         newExplosions = [...state.explosions, ...bursts];
         
-        // Update score: 64 blocks per line
+        // Update score: columns per line
         newLinesCleared += clearedIndices.length;
-        newScore += clearedIndices.length * COLS;
+        newScore += clearedIndices.length * state.columns;
       }
 
       // Add fresh empty rows to the top to maintain ROWS count
       for (let i = 0; i < clearedIndices.length; i++) {
-        filteredGrid.push(Array(COLS).fill(null));
+        filteredGrid.push(Array(state.columns).fill(null));
       }
 
       // 3) Spawn a new piece immediately aligned with the current cylinder rotation
       const piece = randomTetromino();
-      const anglePerCol = (Math.PI * 2) / COLS;
+      const anglePerCol = (Math.PI * 2) / state.columns;
       const colShift = Math.round(-state.targetRotation / anglePerCol);
-      const spawnCol = ((colShift % COLS) + COLS) % COLS;
+      const spawnCol = ((colShift % state.columns) + state.columns) % state.columns;
 
       // Handle Game Over condition if spawn overlaps
       const newActivePiece = {
         type: piece.type,
         shape: piece.shape,
         color: piece.color,
-        row: ROWS - 1, 
+        row: state.rows - 1, 
         col: spawnCol,
       };
 
       if (checkCollision(newActivePiece, filteredGrid, 0)) {
-        // Game Over! Reset to V-shaped grid and reset score
+        // Game Over! Reset with current config
         return {
-          grid: generateVGrid(),
+          grid: generateInitialGrid(state.rows, state.columns, state.startingFill),
           activePiece: newActivePiece,
           explosions: newExplosions,
           score: 0,
