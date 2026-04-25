@@ -12,7 +12,7 @@ export function ActivePiece() {
   useEffect(() => {
     if (stoneTexture) {
       stoneTexture.wrapS = stoneTexture.wrapT = THREE.RepeatWrapping;
-      stoneTexture.repeat.set(2, 2);
+      stoneTexture.repeat.set(1, 1); // Larger grain for better visibility
     }
   }, [stoneTexture]);
 
@@ -47,8 +47,16 @@ export function ActivePiece() {
       {blocks.map((b, i) => (
         <mesh key={i} position={[b.x, b.y, b.z]} rotation={[0, b.angle, 0]}>
           <boxGeometry args={[BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE]} />
-          {/* Use the stone texture with the piece's color, no emissive to keep the 'chilled' look */}
-          <meshStandardMaterial map={stoneTexture} color={b.color} roughness={0.6} metalness={0.1} />
+          {/* Use bumpMap and roughnessMap to make the stone texture feel tangible */}
+          <meshStandardMaterial 
+            map={stoneTexture} 
+            bumpMap={stoneTexture}
+            bumpScale={0.15}
+            roughnessMap={stoneTexture}
+            color={b.color} 
+            roughness={0.8} 
+            metalness={0.1} 
+          />
         </mesh>
       ))}
     </group>

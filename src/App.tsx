@@ -3,7 +3,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useDrag } from '@use-gesture/react';
-import { ContactShadows } from '@react-three/drei';
+import { ContactShadows, Environment } from '@react-three/drei';
 import { CylinderGrid } from './components/CylinderGrid';
 import { SettledBlocks } from './components/SettledBlocks';
 import { ActivePiece } from './components/ActivePiece';
@@ -56,6 +56,11 @@ function App() {
   const togglePause = useGameStore(state => state.togglePause);
   const isMuted = useGameStore(state => state.isMuted);
   const toggleMute = useGameStore(state => state.toggleMute);
+  const score = useGameStore(state => state.score);
+  const linesCleared = useGameStore(state => state.linesCleared);
+
+  const speedMultiplier = 1 + Math.min(0.5, Math.floor(linesCleared / 10) * 0.01);
+  const dropInterval = 1000 / speedMultiplier;
 
   useEffect(() => {
     // Spawn initial piece if one doesn't exist for testing logic
@@ -80,12 +85,13 @@ function App() {
 
   // Gravity game loop
   useEffect(() => {
+    if (paused) return;
     const interval = setInterval(() => {
       moveDown();
-    }, 1000); // Drop 1 row every second
+    }, dropInterval);
 
     return () => clearInterval(interval);
-  }, [moveDown]);
+  }, [moveDown, dropInterval, paused]);
 
   // Bind pointer drag to rotate the cylinder
   const bind = useDrag(({ delta: [dx], down, tap }) => {
@@ -98,36 +104,41 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div {...bind()} style={{ width: '100vw', height: '100vh', backgroundColor: '#222', touchAction: 'none' }}>
+      <div {...bind()} style={{ width: '100vw', height: '100vh', backgroundColor: '#111', touchAction: 'none' }}>
         <Canvas camera={{ position: [0, 5, 45], fov: 45 }} shadows>
-          <color attach="background" args={['#1a1a1a']} />
-          <fog attach="fog" args={['#1a1a1a', 30, 80]} />
+          <color attach="background" args={['#0d0d12']} />
+          <fog attach="fog" args={['#0d0d12', 45, 120]} />
+          
+          <Environment preset="apartment" environmentIntensity={0.5} />
 
-          <ambientLight intensity={0.5} />
-
+          <ambientLight intensity={0.8} />
+          
+          {/* Front Light for general visibility */}
+          <directionalLight position={[0, 0, 50]} intensity={0.6} />
+          
           {/* Main Key Light */}
-          <directionalLight
-            position={[10, 20, 10]}
-            intensity={1.0}
-            castShadow
+          <directionalLight 
+            position={[20, 30, 20]} 
+            intensity={1.5} 
+            castShadow 
             shadow-mapSize={[1024, 1024]}
           />
-
+          
           {/* Piece Follow Light (Highlight the active piece texture) */}
           {activePiece && (
-            <pointLight
-              position={[0, (activePiece.row - 2) - (ROWS / 2) + 4, RADIUS + 2]}
-              intensity={2.0}
-              distance={15}
+            <pointLight 
+              position={[0, (activePiece.row - 2) - (ROWS / 2) + 4, RADIUS + 4]} 
+              intensity={5.0} 
+              distance={25}
               color={activePiece.color}
             />
           )}
-
+          
           {/* Rim Light for separation */}
-          <directionalLight position={[-10, 10, -10]} intensity={0.6} color="#44aaff" />
-
-          {/* Warm Fill Light */}
-          <pointLight position={[-15, -5, 5]} intensity={0.3} color="#ffaa44" />
+          <directionalLight position={[-15, 10, -10]} intensity={1.2} color="#5599ff" />
+          
+          {/* Warm Bottom Glow */}
+          <pointLight position={[0, -ROWS/2, 0]} intensity={1.2} color="#ffaa44" distance={30} />
 
           <Suspense fallback={null}>
             <group position={[0, 4, 0]}>
@@ -210,6 +221,52 @@ function App() {
             Paused
           </div>
         )}
+
+        {/* HUD */}
+        <div style={{
+          position: 'absolute',
+          top: '30px',
+          left: '30px',
+          color: 'white',
+          fontFamily: "'Outfit', 'Inter', sans-serif",
+          zIndex: 100,
+          pointerEvents: 'none',
+          background: 'rgba(0, 0, 0, 0.4)',
+          padding: '15px 25px',
+          borderRadius: '12px',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{ 
+            fontSize: '12px', 
+            textTransform: 'uppercase', 
+            letterSpacing: '2px', 
+            opacity: 0.6,
+            marginBottom: '4px'
+          }}>
+            Current Score
+          </div>
+          <div style={{ 
+            fontSize: '36px', 
+            fontWeight: 'bold', 
+            lineHeight: '1',
+            marginBottom: '12px'
+          }}>
+            {score.toLocaleString()}
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            gap: '20px', 
+            fontSize: '14px', 
+            textTransform: 'uppercase', 
+            letterSpacing: '1px',
+            opacity: 0.8 
+          }}>
+            <span>Lines: <strong>{linesCleared}</strong></span>
+            <span>Speed: <strong>+{((speedMultiplier - 1) * 100).toFixed(0)}%</strong></span>
+          </div>
+        </div>
       </div>
     </ErrorBoundary>
   );

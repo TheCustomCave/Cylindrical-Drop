@@ -28,6 +28,8 @@ interface GameState {
   togglePause: () => void;
   isMuted: boolean;
   toggleMute: () => void;
+  score: number;
+  linesCleared: number;
 }
 
 const getBlockCol = (pieceCol: number, shape: number[][], x: number) => {
@@ -72,6 +74,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   explosions: [],
   paused: false,
   isMuted: false,
+  score: 0,
+  linesCleared: 0,
 
   toggleMute: () => set(state => ({ isMuted: !state.isMuted })),
   togglePause: () => set(state => ({ paused: !state.paused })),
@@ -232,10 +236,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
 
       let newExplosions = state.explosions;
+      let newScore = state.score;
+      let newLinesCleared = state.linesCleared;
+
       if (clearedIndices.length > 0) {
         playClearSound();
         const bursts = clearedIndices.map(r => ({ id: Date.now() + Math.random(), row: r }));
         newExplosions = [...state.explosions, ...bursts];
+        
+        // Update score: 64 blocks per line
+        newLinesCleared += clearedIndices.length;
+        newScore += clearedIndices.length * COLS;
       }
 
       // Add fresh empty rows to the top to maintain ROWS count
@@ -259,18 +270,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
 
       if (checkCollision(newActivePiece, filteredGrid, 0)) {
-        // Game Over! Reset to V-shaped grid
+        // Game Over! Reset to V-shaped grid and reset score
         return {
           grid: generateVGrid(),
           activePiece: newActivePiece,
-          explosions: newExplosions
+          explosions: newExplosions,
+          score: 0,
+          linesCleared: 0
         }
       }
 
       return {
         grid: filteredGrid,
         activePiece: newActivePiece,
-        explosions: newExplosions
+        explosions: newExplosions,
+        score: newScore,
+        linesCleared: newLinesCleared
       };
     }
 

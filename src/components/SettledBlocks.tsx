@@ -17,7 +17,7 @@ export function SettledBlocks() {
   useEffect(() => {
     if (stoneTexture) {
       stoneTexture.wrapS = stoneTexture.wrapT = THREE.RepeatWrapping;
-      stoneTexture.repeat.set(2, 2);
+      stoneTexture.repeat.set(1, 1);
     }
   }, [stoneTexture]);
 
@@ -50,8 +50,8 @@ export function SettledBlocks() {
       tempObject.updateMatrix();
       meshRef.current!.setMatrixAt(i, tempObject.matrix);
       
-      // Lighten the settled blocks slightly for better contrast
-      tempColor.set('#aaaaaa');
+      // Give the settled blocks a warm stone tint for better color depth
+      tempColor.set('#b8b0a8');
       meshRef.current!.setColorAt(i, tempColor);
     });
 
@@ -64,7 +64,14 @@ export function SettledBlocks() {
   return (
     <instancedMesh ref={meshRef} args={[null as any, null as any, ROWS * COLS]}>
       <boxGeometry args={[BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE]} />
-      <meshStandardMaterial map={stoneTexture} roughness={0.7} metalness={0.1} />
+      <meshStandardMaterial 
+        map={stoneTexture} 
+        bumpMap={stoneTexture}
+        bumpScale={0.15}
+        roughnessMap={stoneTexture}
+        roughness={0.8} 
+        metalness={0.1} 
+      />
     </instancedMesh>
   );
 }
