@@ -2,8 +2,6 @@
 
 A premium, immersive 3D cylindrical Tetris experience built with **React**, **Three.js**, and **Zustand**. 
 
-![Game Preview](public/stone_texture.png) *(Placeholder for gameplay screenshot)*
-
 ## ✨ Features
 
 - **🌀 3D Cylindrical Gameplay:** A unique twist on the classic formula. Rotate the entire tower to find the perfect fit.
@@ -13,7 +11,6 @@ A premium, immersive 3D cylindrical Tetris experience built with **React**, **Th
   - **Dynamic Sizing:** Play on Small (32), Standard (64), or Large (96) cylinders.
   - **Starting Fills:** Choose from a clean slate, a classic V-Shape, or a messy Randomized start with cascading gravity.
 - **🔊 Immersive Audio:** Procedural "stone clunk" sounds and ambient clear effects with full volume control.
-- **🚀 Performance Optimized:** Built using `InstancedMesh` to handle thousands of blocks at 60+ FPS.
 
 ## 🎮 Controls
 
@@ -26,13 +23,18 @@ A premium, immersive 3D cylindrical Tetris experience built with **React**, **Th
 | **Volume/Mute** | Control Panel |
 | **Drag & Spin** | Mouse / Touch Support |
 
-## 🛠️ Technical Stack
+## 🛠️ Developer Guide
 
-- **Framework:** React 18
-- **Rendering:** [React Three Fiber](https://github.com/pmndrs/react-three-fiber) & [Three.js](https://threejs.org/)
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
-- **Physics & Logic:** Custom cylindrical coordinate system
-- **Styling:** Vanilla CSS + Glassmorphism
+### State Management & Logic
+The game's core logic is managed by **Zustand** in `src/store/gameStore.ts`. 
+- **Dynamic Radius:** The cylinder's radius is calculated on the fly: `RADIUS = columns / (2 * Math.PI)`. 
+- **Collision Detection:** Collision is handled in 2D (row/column) but rendered in 3D. The `getBlockCol` utility handles the wrap-around logic for the cylinder.
+
+### Configuration
+You can tweak the game's difficulty and visuals in the following locations:
+- **Difficulty Scaling:** Adjusted in `App.tsx` via the `speedMultiplier` calculation (currently +1% every 10 lines).
+- **Starting Fills:** Logic for the "V-Shape" and "Randomized" starts can be found in `generateInitialGrid` within the store.
+- **Visuals:** Materials are defined in `SettledBlocks.tsx` and `ActivePiece.tsx`. We use a custom `stone_texture.png` with a high `bumpScale` for a tactile feel.
 
 ## 🚀 Getting Started
 
@@ -48,16 +50,6 @@ A premium, immersive 3D cylindrical Tetris experience built with **React**, **Th
    ```bash
    npm run dev
    ```
-
-## 📜 Roadmap
-
-- [x] Core 3D Cylindrical Mechanics
-- [x] Scoring and Difficulty Scaling
-- [x] Advanced Material Shaders & Lighting
-- [x] Game Settings & Presets
-- [ ] Mobile-first Vercel Deployment
-- [ ] Global Leaderboards
-- [ ] Power-ups and Special Block Types
 
 ---
 
