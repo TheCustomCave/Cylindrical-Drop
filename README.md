@@ -1,73 +1,64 @@
-# React + TypeScript + Vite
+# 🌑 Cylindrical Drop
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A premium, immersive 3D cylindrical Tetris experience built with **React**, **Three.js**, and **Zustand**. 
 
-Currently, two official plugins are available:
+![Game Preview](public/stone_texture.png) *(Placeholder for gameplay screenshot)*
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Features
 
-## React Compiler
+- **🌀 3D Cylindrical Gameplay:** A unique twist on the classic formula. Rotate the entire tower to find the perfect fit.
+- **🗿 Tactile Stone Aesthetics:** Beautifully textured blocks with dynamic lighting, bump mapping, and a "chilled" stone palette.
+- **📊 Premium Glassmorphic HUD:** Real-time scoring, line tracking, and difficulty scaling displayed on a sleek, frosted-glass interface.
+- **⚙️ Advanced Customization:**
+  - **Dynamic Sizing:** Play on Small (32), Standard (64), or Large (96) cylinders.
+  - **Starting Fills:** Choose from a clean slate, a classic V-Shape, or a messy Randomized start with cascading gravity.
+- **🔊 Immersive Audio:** Procedural "stone clunk" sounds and ambient clear effects with full volume control.
+- **🚀 Performance Optimized:** Built using `InstancedMesh` to handle thousands of blocks at 60+ FPS.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🎮 Controls
 
-## Expanding the ESLint configuration
+| Action | Key |
+| :--- | :--- |
+| **Rotate Cylinder** | `Left` / `Right` Arrow or `A` / `D` |
+| **Rotate Piece** | `Up` Arrow or `W` |
+| **Soft Drop** | `Down` Arrow or `S` |
+| **Pause** | `P` |
+| **Volume/Mute** | Control Panel |
+| **Drag & Spin** | Mouse / Touch Support |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🛠️ Technical Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Framework:** React 18
+- **Rendering:** [React Three Fiber](https://github.com/pmndrs/react-three-fiber) & [Three.js](https://threejs.org/)
+- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
+- **Physics & Logic:** Custom cylindrical coordinate system
+- **Styling:** Vanilla CSS + Glassmorphism
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🚀 Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Clone the repo:**
+   ```bash
+   git clone https://github.com/TheCustomCave/Cylindrical-Drop.git
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+3. **Run locally:**
+   ```bash
+   npm run dev
+   ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 📜 Roadmap
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- [x] Core 3D Cylindrical Mechanics
+- [x] Scoring and Difficulty Scaling
+- [x] Advanced Material Shaders & Lighting
+- [x] Game Settings & Presets
+- [ ] Mobile-first Vercel Deployment
+- [ ] Global Leaderboards
+- [ ] Power-ups and Special Block Types
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+
+Developed with ❤️ by **The Custom Cave**.
