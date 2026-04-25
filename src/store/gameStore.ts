@@ -61,40 +61,25 @@ const checkCollision = (piece: ActivePiece, grid: GridCell[][], dr = 0, targetCo
 };
 
 const generateInitialGrid = (rows: number, cols: number, fill: 'v-shape' | 'none' | 'random') => {
+  // Pre-calculate random heights for the 'random' fill mode
+  const randomHeights = fill === 'random' 
+    ? Array.from({ length: cols }, () => Math.floor(Math.random() * 12)) 
+    : [];
+
   return Array.from({ length: rows }, (_, r) => {
     return Array.from({ length: cols }, (_, c) => {
       if (fill === 'none') return null;
       if (fill === 'v-shape') {
         const distFromFront = Math.min(c, cols - c);
-        // Even Steeper V: rises by 1 every 0.8 columns
         const height = Math.floor(distFromFront / 0.8);
         return r < height ? 'L' : null;
       }
       if (fill === 'random') {
-        // Randomly populate, then we will apply 'gravity' in the next step
-        if (r < 15) return Math.random() > 0.5 ? 'L' : null;
+        return r < randomHeights[c] ? 'L' : null;
       }
       return null;
     });
   });
-
-  if (fill === 'random') {
-    // Simple cascading gravity for the initial random fill
-    for (let c = 0; c < cols; c++) {
-      const columnBlocks: GridCell[] = [];
-      // Collect all non-null blocks in this column
-      for (let r = 0; r < rows; r++) {
-        if (grid[r][c] !== null) {
-          columnBlocks.push(grid[r][c]);
-        }
-      }
-      // Put them back at the bottom of the column
-      for (let r = 0; r < rows; r++) {
-        grid[r][c] = r < columnBlocks.length ? columnBlocks[r] : null;
-      }
-    }
-  }
-  return grid;
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
