@@ -81,14 +81,16 @@ const generateInitialGrid = (rows: number, cols: number, fill: 'v-shape' | 'none
   if (fill === 'random') {
     // Simple cascading gravity for the initial random fill
     for (let c = 0; c < cols; c++) {
-      let writeRow = 0;
+      const columnBlocks: GridCell[] = [];
+      // Collect all non-null blocks in this column
       for (let r = 0; r < rows; r++) {
         if (grid[r][c] !== null) {
-          const type = grid[r][c];
-          grid[r][c] = null;
-          grid[writeRow][c] = type;
-          writeRow++;
+          columnBlocks.push(grid[r][c]);
         }
+      }
+      // Put them back at the bottom of the column
+      for (let r = 0; r < rows; r++) {
+        grid[r][c] = r < columnBlocks.length ? columnBlocks[r] : null;
       }
     }
   }

@@ -253,11 +253,18 @@ function App() {
             <select 
               value={selectedCols} 
               onChange={(e) => setSelectedCols(parseInt(e.target.value))}
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', padding: '5px 8px' }}
+              style={{ 
+                background: 'rgba(20, 20, 25, 0.9)', 
+                color: 'white', 
+                border: '1px solid rgba(255,255,255,0.2)', 
+                borderRadius: '6px', 
+                padding: '5px 8px',
+                cursor: 'pointer'
+              }}
             >
-              <option value="32">Small (32)</option>
-              <option value="64">Standard (64)</option>
-              <option value="96">Large (96)</option>
+              <option value="32" style={{ background: '#1a1a24', color: 'white' }}>Small (32)</option>
+              <option value="64" style={{ background: '#1a1a24', color: 'white' }}>Standard (64)</option>
+              <option value="96" style={{ background: '#1a1a24', color: 'white' }}>Large (96)</option>
             </select>
           </div>
 
@@ -266,11 +273,18 @@ function App() {
             <select 
               value={selectedFill} 
               onChange={(e) => setSelectedFill(e.target.value as any)}
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', padding: '5px 8px' }}
+              style={{ 
+                background: 'rgba(20, 20, 25, 0.9)', 
+                color: 'white', 
+                border: '1px solid rgba(255,255,255,0.2)', 
+                borderRadius: '6px', 
+                padding: '5px 8px',
+                cursor: 'pointer'
+              }}
             >
-              <option value="none">Empty</option>
-              <option value="v-shape">V-Shape</option>
-              <option value="random">Randomized</option>
+              <option value="none" style={{ background: '#1a1a24', color: 'white' }}>Empty</option>
+              <option value="v-shape" style={{ background: '#1a1a24', color: 'white' }}>V-Shape</option>
+              <option value="random" style={{ background: '#1a1a24', color: 'white' }}>Randomized</option>
             </select>
           </div>
 
