@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { ROWS, COLS } from '../constants';
 import { type BlockType, randomTetromino } from '../utils/tetrominos';
-import { playClunk, playClearSound } from '../utils/audio';
 
 export type GridCell = BlockType | null;
 
@@ -181,7 +180,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     if (!collision) {
-      playClunk(); // Give satisfying feedback
+      // Move audio call to a safe context
+      setTimeout(() => {
+        try { import('../utils/audio').then(m => m.playClunk()); } catch(e) {}
+      }, 0);
       return {
         activePiece: { ...testPiece, col: kickedCol }
       };
@@ -274,7 +276,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       }
 
-      playClunk();
+      // Move audio call to a safe context
+      setTimeout(() => {
+        try { import('../utils/audio').then(m => m.playClunk()); } catch(e) {}
+      }, 0);
 
       // 2) Clear full rows
       const clearedIndices: number[] = [];
@@ -289,7 +294,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       let newLinesCleared = state.linesCleared;
 
       if (clearedIndices.length > 0) {
-        playClearSound();
+        setTimeout(() => {
+          try { import('../utils/audio').then(m => m.playClearSound()); } catch(e) {}
+        }, 0);
         const bursts = clearedIndices.map(r => ({ id: Date.now() + Math.random(), row: r }));
         newExplosions = [...state.explosions, ...bursts];
         
