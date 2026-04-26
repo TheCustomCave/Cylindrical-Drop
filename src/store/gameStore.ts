@@ -309,7 +309,21 @@ export const useGameStore = create<GameState>((set, get) => ({
         filteredGrid.push(Array(state.columns).fill(null));
       }
 
-      // 3) Spawn a new piece immediately aligned with the current cylinder rotation
+      // 3) Apply Cascading Gravity (Compact all columns to remove floating blocks)
+      const finalGrid: GridCell[][] = Array.from({ length: state.rows }, () => Array(state.columns).fill(null));
+      for (let c = 0; c < state.columns; c++) {
+        const columnBlocks: GridCell[] = [];
+        for (let r = 0; r < state.rows; r++) {
+          if (filteredGrid[r][c] !== null) {
+            columnBlocks.push(filteredGrid[r][c]);
+          }
+        }
+        for (let r = 0; r < columnBlocks.length; r++) {
+          finalGrid[r][c] = columnBlocks[r];
+        }
+      }
+
+      // 4) Spawn a new piece immediately aligned with the current cylinder rotation
       const piece = randomTetromino();
       const anglePerCol = (Math.PI * 2) / state.columns;
       const colShift = Math.round(-state.targetRotation / anglePerCol);
@@ -324,7 +338,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         col: spawnCol,
       };
 
-      if (checkCollision(newActivePiece, filteredGrid, 0)) {
+      if (checkCollision(newActivePiece, finalGrid, 0)) {
         // Game Over! Reset with current config
         return {
           grid: generateInitialGrid(state.rows, state.columns, state.startingFill),
@@ -336,7 +350,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
 
       return {
-        grid: filteredGrid,
+        grid: finalGrid,
         activePiece: newActivePiece,
         explosions: newExplosions,
         score: newScore,

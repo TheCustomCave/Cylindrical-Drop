@@ -70,8 +70,8 @@ function App() {
   const [selectedCols, setSelectedCols] = useState(columns);
   const [selectedFill, setSelectedFill] = useState(startingFill);
 
-  // Auto-zoom based on RADIUS
-  const cameraZ = 30 + RADIUS * 1.5;
+  // Auto-zoom based on RADIUS - adjusted for better framing on large cylinders
+  const cameraZ = 35 + RADIUS * 2.2;
 
   const speedMultiplier = 1 + Math.min(0.5, Math.floor(linesCleared / 10) * 0.01);
   const dropInterval = 1000 / speedMultiplier;

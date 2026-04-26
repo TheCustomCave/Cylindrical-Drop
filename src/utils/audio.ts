@@ -16,44 +16,16 @@ export const startBackgroundMusic = () => {
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
-  if (bgOsc) return;
-
-  const t = audioCtx.currentTime;
+  
+  // NOTE FOR USER:
+  // To add background music, place an mp3/wav in the 'public/' folder
+  // and load it here using a BufferSource or an <audio> element.
+  // For now, we've removed the synthesized drone as requested.
+  
+  if (bgGain) return;
   bgGain = audioCtx.createGain();
-
-  // Low hum
-  const osc1 = audioCtx.createOscillator();
-  osc1.type = 'triangle';
-  osc1.frequency.setValueAtTime(40, t);
-  
-  // Higher ambient pad
-  const osc2 = audioCtx.createOscillator();
-  osc2.type = 'sine';
-  osc2.frequency.setValueAtTime(110, t);
-
-  const filter = audioCtx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(400, t);
-  
-  const lfo = audioCtx.createOscillator();
-  const lfoGain = audioCtx.createGain();
-  lfo.frequency.value = 0.15;
-  lfoGain.gain.value = 300;
-  lfo.connect(lfoGain);
-  lfoGain.connect(filter.frequency);
-
-  bgGain.gain.setValueAtTime(getVolume() * 0.2, t); 
-
-  osc1.connect(filter);
-  osc2.connect(filter);
-  filter.connect(bgGain);
+  bgGain.gain.setValueAtTime(getVolume() * 0.2, audioCtx.currentTime);
   bgGain.connect(audioCtx.destination);
-
-  osc1.start();
-  osc2.start();
-  lfo.start();
-  
-  bgOsc = osc1; // Reference for tracking
 };
 
 export const updateAudioSettings = () => {
