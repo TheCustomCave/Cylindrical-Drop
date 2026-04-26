@@ -127,22 +127,19 @@ function App() {
 
           <ambientLight intensity={0.8} />
           
-          {/* Front Light for general visibility */}
-          <directionalLight position={[0, 0, 50]} intensity={0.6} />
-          
-          {/* Main Key Light - Reduced intensity to prevent glare */}
+          {/* Main Key Light - Softened to prevent glare */}
           <directionalLight 
             position={[20, 30, 20]} 
-            intensity={1.0} 
+            intensity={0.7} 
             castShadow 
             shadow-mapSize={[1024, 1024]}
           />
           
-          {/* Piece Follow Light - Reduced intensity and moved back to soften glare */}
+          {/* Piece Follow Light - Softened further */}
           {activePiece && (
             <pointLight 
               position={[0, (activePiece.row - 2) - (rows / 2) + 4, RADIUS + 8]} 
-              intensity={1.5} 
+              intensity={0.8} 
               distance={30}
               color={activePiece.color}
             />
