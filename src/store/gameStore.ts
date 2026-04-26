@@ -79,11 +79,10 @@ const generateInitialGrid = (rows: number, cols: number, fill: 'v-shape' | 'none
         return r < randomHeights[c] ? 'L' : null;
       }
       if (fill === 'spiral') {
-        // Spiral path: fill up to row 18, but leave a path open
-        // The empty path shifts by 2 columns every row
-        const emptyPathCol = (r * 3) % cols;
+        // Spiral path: more vertical (1 column shift every 2 rows)
+        const emptyPathCol = Math.floor(r / 2) % cols;
         const distFromPath = Math.min(Math.abs(c - emptyPathCol), cols - Math.abs(c - emptyPathCol));
-        if (r < 18 && distFromPath > 1.5) {
+        if (r < 20 && distFromPath > 1.5) {
           return 'L';
         }
       }

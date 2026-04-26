@@ -138,12 +138,12 @@ function App() {
             shadow-mapSize={[1024, 1024]}
           />
           
-          {/* Piece Follow Light (Highlight the active piece texture) */}
+          {/* Piece Follow Light - Reduced intensity and moved back to soften glare */}
           {activePiece && (
             <pointLight 
-              position={[0, (activePiece.row - 2) - (rows / 2) + 4, RADIUS + 4]} 
-              intensity={5.0} 
-              distance={25}
+              position={[0, (activePiece.row - 2) - (rows / 2) + 4, RADIUS + 8]} 
+              intensity={1.5} 
+              distance={30}
               color={activePiece.color}
             />
           )}

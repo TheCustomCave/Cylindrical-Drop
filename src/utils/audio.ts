@@ -19,32 +19,41 @@ export const startBackgroundMusic = () => {
   if (bgOsc) return;
 
   const t = audioCtx.currentTime;
-  bgOsc = audioCtx.createOscillator();
   bgGain = audioCtx.createGain();
 
-  bgOsc.type = 'triangle';
-  bgOsc.frequency.setValueAtTime(40, t); // Low resonant hum
+  // Low hum
+  const osc1 = audioCtx.createOscillator();
+  osc1.type = 'triangle';
+  osc1.frequency.setValueAtTime(40, t);
   
-  // Create a slow pulsing filter for "atmospheric" feel
+  // Higher ambient pad
+  const osc2 = audioCtx.createOscillator();
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(110, t);
+
   const filter = audioCtx.createBiquadFilter();
   filter.type = 'lowpass';
   filter.frequency.setValueAtTime(400, t);
   
   const lfo = audioCtx.createOscillator();
   const lfoGain = audioCtx.createGain();
-  lfo.frequency.value = 0.1; // Slow pulse
-  lfoGain.gain.value = 200;
+  lfo.frequency.value = 0.15;
+  lfoGain.gain.value = 300;
   lfo.connect(lfoGain);
   lfoGain.connect(filter.frequency);
-  lfo.start();
 
-  bgGain.gain.setValueAtTime(getVolume() * 0.1, t); // Very quiet
+  bgGain.gain.setValueAtTime(getVolume() * 0.2, t); 
 
-  bgOsc.connect(filter);
+  osc1.connect(filter);
+  osc2.connect(filter);
   filter.connect(bgGain);
   bgGain.connect(audioCtx.destination);
 
-  bgOsc.start();
+  osc1.start();
+  osc2.start();
+  lfo.start();
+  
+  bgOsc = osc1; // Reference for tracking
 };
 
 export const updateAudioSettings = () => {
