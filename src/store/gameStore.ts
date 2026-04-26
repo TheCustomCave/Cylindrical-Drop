@@ -164,9 +164,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const testPiece = { ...state.activePiece, shape: newShape };
     
-    // Try kicks: Original, Left, Right, Up
+    // Try kicks: Original, Left, Right
     let kickedCol = state.activePiece.col;
-    let kickedRow = state.activePiece.row;
     let collision = checkCollision(testPiece, state.grid, 0, kickedCol);
     
     if (collision) {
@@ -179,20 +178,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       kickedCol = (state.activePiece.col + 1) % state.columns;
       collision = checkCollision(testPiece, state.grid, 0, kickedCol);
     }
-    if (collision) {
-      // Kick Up (Floor kick)
-      kickedCol = state.activePiece.col;
-      kickedRow = state.activePiece.row + 1;
-      const upPiece = { ...testPiece, row: kickedRow };
-      collision = checkCollision(upPiece, state.grid, 0, kickedCol);
-      if (!collision) {
-        return { activePiece: { ...upPiece, col: kickedCol } };
-      }
-    }
 
     if (!collision) {
       return {
-        activePiece: { ...testPiece, col: kickedCol, row: kickedRow }
+        activePiece: { ...testPiece, col: kickedCol }
       };
     }
     return state;
@@ -313,26 +302,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         newLinesCleared += clearedIndices.length;
         newScore += clearedIndices.length * state.columns;
 
-        // Pad the filtered grid back to ROWS before applying gravity
+        // Pad the filtered grid back to ROWS to maintain structure
         while (filteredGrid.length < state.rows) {
           filteredGrid.push(Array(state.columns).fill(null));
         }
-
-        // Apply Column-Based Cascading Gravity ONLY when lines are cleared
-        // This drops blocks into gaps regardless of horizontal neighbors
-        const compactedGrid: GridCell[][] = Array.from({ length: state.rows }, () => Array(state.columns).fill(null));
-        for (let c = 0; c < state.columns; c++) {
-          const columnBlocks: GridCell[] = [];
-          for (let r = 0; r < state.rows; r++) {
-            if (filteredGrid[r] && filteredGrid[r][c] !== null) {
-              columnBlocks.push(filteredGrid[r][c]);
-            }
-          }
-          for (let r = 0; r < columnBlocks.length; r++) {
-            compactedGrid[r][c] = columnBlocks[r];
-          }
-        }
-        filteredGrid.splice(0, state.rows, ...compactedGrid);
       }
 
       // 4) Spawn a new piece immediately aligned with the current cylinder rotation
