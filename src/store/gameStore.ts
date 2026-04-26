@@ -164,28 +164,35 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const testPiece = { ...state.activePiece, shape: newShape };
     
-    // Check if the rotated piece collides (bounds check or block overlap)
-    // We try original position, then try kicking left/right by 1
+    // Try kicks: Original, Left, Right, Up
     let kickedCol = state.activePiece.col;
+    let kickedRow = state.activePiece.row;
     let collision = checkCollision(testPiece, state.grid, 0, kickedCol);
     
     if (collision) {
+      // Kick Left
       kickedCol = (state.activePiece.col - 1 + state.columns) % state.columns;
       collision = checkCollision(testPiece, state.grid, 0, kickedCol);
     }
     if (collision) {
+      // Kick Right
       kickedCol = (state.activePiece.col + 1) % state.columns;
       collision = checkCollision(testPiece, state.grid, 0, kickedCol);
     }
+    if (collision) {
+      // Kick Up (Floor kick)
+      kickedCol = state.activePiece.col;
+      kickedRow = state.activePiece.row + 1;
+      const upPiece = { ...testPiece, row: kickedRow };
+      collision = checkCollision(upPiece, state.grid, 0, kickedCol);
+      if (!collision) {
+        return { activePiece: { ...upPiece, col: kickedCol } };
+      }
+    }
 
     if (!collision) {
-      /*
-      setTimeout(() => {
-        try { import('../utils/audio').then(m => m.playClunk()); } catch(e) {}
-      }, 0);
-      */
       return {
-        activePiece: { ...testPiece, col: kickedCol }
+        activePiece: { ...testPiece, col: kickedCol, row: kickedRow }
       };
     }
     return state;
@@ -311,63 +318,21 @@ export const useGameStore = create<GameState>((set, get) => ({
           filteredGrid.push(Array(state.columns).fill(null));
         }
 
-        // Apply Grounded Cascading Gravity
-        // Blocks only fall if they are not connected to the floor (row 0)
-        let changed = true;
-        let currentGrid = filteredGrid.map(row => [...row]);
-
-        while (changed) {
-          changed = false;
-          const grounded = Array.from({ length: state.rows }, () => Array(state.columns).fill(false));
-          const queue: [number, number][] = [];
-
-          // 1. Seed queue with all blocks on the floor
-          for (let c = 0; c < state.columns; c++) {
-            if (currentGrid[0][c] !== null) {
-              queue.push([0, c]);
-            }
-          }
-
-          // 2. Flood fill to find all grounded blocks
-          let head = 0;
-          while (head < queue.length) {
-            const [r, c] = queue[head++];
-            if (grounded[r][c]) continue;
-            grounded[r][c] = true;
-
-            const neighbors = [
-              [r + 1, c], [r - 1, c], 
-              [r, (c + 1) % state.columns], 
-              [r, (c - 1 + state.columns) % state.columns]
-            ];
-
-            for (const [nr, nc] of neighbors) {
-              if (nr >= 0 && nr < state.rows && currentGrid[nr][nc] !== null && !grounded[nr][nc]) {
-                queue.push([nr, nc]);
-              }
-            }
-          }
-
-          // 3. Move all non-grounded blocks down by 1
-          const nextGrid = Array.from({ length: state.rows }, () => Array(state.columns).fill(null));
-          let movedAny = false;
+        // Apply Column-Based Cascading Gravity ONLY when lines are cleared
+        // This drops blocks into gaps regardless of horizontal neighbors
+        const compactedGrid: GridCell[][] = Array.from({ length: state.rows }, () => Array(state.columns).fill(null));
+        for (let c = 0; c < state.columns; c++) {
+          const columnBlocks: GridCell[] = [];
           for (let r = 0; r < state.rows; r++) {
-            for (let c = 0; c < state.columns; c++) {
-              if (currentGrid[r][c] !== null) {
-                if (grounded[r][c] || r === 0) {
-                  nextGrid[r][c] = currentGrid[r][c];
-                } else {
-                  // This block is floating! Move it down
-                  nextGrid[r - 1][c] = currentGrid[r][c];
-                  movedAny = true;
-                  changed = true;
-                }
-              }
+            if (filteredGrid[r] && filteredGrid[r][c] !== null) {
+              columnBlocks.push(filteredGrid[r][c]);
             }
           }
-          if (movedAny) currentGrid = nextGrid;
+          for (let r = 0; r < columnBlocks.length; r++) {
+            compactedGrid[r][c] = columnBlocks[r];
+          }
         }
-        filteredGrid.splice(0, state.rows, ...currentGrid);
+        filteredGrid.splice(0, state.rows, ...compactedGrid);
       }
 
       // 4) Spawn a new piece immediately aligned with the current cylinder rotation
