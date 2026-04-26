@@ -59,6 +59,10 @@ function App() {
   const toggleMute = useGameStore(state => state.toggleMute);
   const score = useGameStore(state => state.score);
   const linesCleared = useGameStore(state => state.linesCleared);
+  const columns = useGameStore(state => state.columns);
+  const rows = useGameStore(state => state.rows);
+  const startingFill = useGameStore(state => state.startingFill);
+  const restartGame = useGameStore(state => state.restartGame);
   const volume = useGameStore(state => state.volume);
   const setVolume = useGameStore(state => state.setVolume);
   const RADIUS = columns / (2 * Math.PI);
