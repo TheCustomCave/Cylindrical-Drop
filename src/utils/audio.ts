@@ -1,10 +1,61 @@
 import { useGameStore } from '../store/gameStore';
 
 let audioCtx: AudioContext | null = null;
+let bgOsc: OscillatorNode | null = null;
+let bgGain: GainNode | null = null;
+
+const getVolume = () => {
+  const { isMuted, volume } = useGameStore.getState();
+  return isMuted ? 0 : volume;
+};
+
+export const startBackgroundMusic = () => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  if (bgOsc) return;
+
+  const t = audioCtx.currentTime;
+  bgOsc = audioCtx.createOscillator();
+  bgGain = audioCtx.createGain();
+
+  bgOsc.type = 'triangle';
+  bgOsc.frequency.setValueAtTime(40, t); // Low resonant hum
+  
+  // Create a slow pulsing filter for "atmospheric" feel
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(400, t);
+  
+  const lfo = audioCtx.createOscillator();
+  const lfoGain = audioCtx.createGain();
+  lfo.frequency.value = 0.1; // Slow pulse
+  lfoGain.gain.value = 200;
+  lfo.connect(lfoGain);
+  lfoGain.connect(filter.frequency);
+  lfo.start();
+
+  bgGain.gain.setValueAtTime(getVolume() * 0.1, t); // Very quiet
+
+  bgOsc.connect(filter);
+  filter.connect(bgGain);
+  bgGain.connect(audioCtx.destination);
+
+  bgOsc.start();
+};
+
+export const updateAudioSettings = () => {
+  if (bgGain && audioCtx) {
+    bgGain.gain.setTargetAtTime(getVolume() * 0.1, audioCtx.currentTime, 0.1);
+  }
+};
 
 export const playClunk = () => {
-  if (useGameStore.getState().isMuted) return;
-  // Initialize on first user interaction to comply with browser autoplay policies
+  const vol = getVolume();
+  if (vol === 0) return;
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
@@ -22,7 +73,7 @@ export const playClunk = () => {
   osc.frequency.setValueAtTime(120, t);
   osc.frequency.exponentialRampToValueAtTime(30, t + 0.1);
   
-  gain.gain.setValueAtTime(1, t);
+  gain.gain.setValueAtTime(vol, t);
   gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
   
   osc.connect(gain);
@@ -47,7 +98,7 @@ export const playClunk = () => {
   noiseFilter.frequency.value = 800;
 
   const noiseGain = audioCtx.createGain();
-  noiseGain.gain.setValueAtTime(0.6, t);
+  noiseGain.gain.setValueAtTime(vol * 0.6, t);
   noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
 
   noiseSource.connect(noiseFilter);
@@ -58,7 +109,8 @@ export const playClunk = () => {
 };
 
 export const playClearSound = () => {
-  if (useGameStore.getState().isMuted) return;
+  const vol = getVolume();
+  if (vol === 0) return;
   if (!audioCtx) return;
   const t = audioCtx.currentTime;
   
@@ -70,7 +122,7 @@ export const playClearSound = () => {
   osc.frequency.setValueAtTime(60, t);
   osc.frequency.exponentialRampToValueAtTime(10, t + 0.8);
   
-  gain.gain.setValueAtTime(0.8, t);
+  gain.gain.setValueAtTime(vol * 0.8, t);
   gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
   
   osc.connect(gain);
@@ -95,7 +147,7 @@ export const playClearSound = () => {
   noiseFilter.frequency.value = 400;
 
   const noiseGain = audioCtx.createGain();
-  noiseGain.gain.setValueAtTime(1, t);
+  noiseGain.gain.setValueAtTime(vol, t);
   noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
 
   noiseSource.connect(noiseFilter);

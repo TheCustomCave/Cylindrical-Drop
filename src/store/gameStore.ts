@@ -32,8 +32,10 @@ interface GameState {
   linesCleared: number;
   columns: number;
   rows: number;
-  startingFill: 'v-shape' | 'none' | 'random';
-  restartGame: (cols?: number, rows?: number, fill?: 'v-shape' | 'none' | 'random') => void;
+  startingFill: 'v-shape' | 'none' | 'random' | 'spiral';
+  restartGame: (cols?: number, rows?: number, fill?: 'v-shape' | 'none' | 'random' | 'spiral') => void;
+  volume: number;
+  setVolume: (v: number) => void;
 }
 
 const getBlockCol = (pieceCol: number, shape: number[][], x: number, cols: number) => {
@@ -60,7 +62,7 @@ const checkCollision = (piece: ActivePiece, grid: GridCell[][], dr = 0, targetCo
   return false;
 };
 
-const generateInitialGrid = (rows: number, cols: number, fill: 'v-shape' | 'none' | 'random') => {
+const generateInitialGrid = (rows: number, cols: number, fill: 'v-shape' | 'none' | 'random' | 'spiral') => {
   // Pre-calculate random heights for the 'random' fill mode
   const randomHeights = fill === 'random' 
     ? Array.from({ length: cols }, () => Math.floor(Math.random() * 12)) 
@@ -77,6 +79,15 @@ const generateInitialGrid = (rows: number, cols: number, fill: 'v-shape' | 'none
       if (fill === 'random') {
         return r < randomHeights[c] ? 'L' : null;
       }
+      if (fill === 'spiral') {
+        // Spiral path: fill up to row 18, but leave a path open
+        // The empty path shifts by 2 columns every row
+        const emptyPathCol = (r * 3) % cols;
+        const distFromPath = Math.min(Math.abs(c - emptyPathCol), cols - Math.abs(c - emptyPathCol));
+        if (r < 18 && distFromPath > 1.5) {
+          return 'L';
+        }
+      }
       return null;
     });
   });
@@ -92,9 +103,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   explosions: [],
   paused: false,
   isMuted: false,
+  volume: 0.5,
   score: 0,
   linesCleared: 0,
 
+  setVolume: (v: number) => set({ volume: Math.max(0, Math.min(1, v)) }),
+  
   restartGame: (cols, rows, fill) => set(state => {
     const newCols = cols ?? state.columns;
     const newRows = rows ?? state.rows;

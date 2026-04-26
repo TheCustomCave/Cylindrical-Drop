@@ -67,7 +67,14 @@ export function SettledBlocks() {
   return (
     <instancedMesh ref={meshRef} args={[null as any, null as any, rows * columns]}>
       <boxGeometry args={[BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE]} />
+      
+      {/* Right, Left, Top, Bottom, FRONT (Textured), Back */}
+      <meshStandardMaterial attach="material-0" roughness={0.8} metalness={0.1} />
+      <meshStandardMaterial attach="material-1" roughness={0.8} metalness={0.1} />
+      <meshStandardMaterial attach="material-2" roughness={0.8} metalness={0.1} />
+      <meshStandardMaterial attach="material-3" roughness={0.8} metalness={0.1} />
       <meshStandardMaterial 
+        attach="material-4"
         map={stoneTexture} 
         bumpMap={stoneTexture}
         bumpScale={0.15}
@@ -75,6 +82,7 @@ export function SettledBlocks() {
         roughness={0.8} 
         metalness={0.1} 
       />
+      <meshStandardMaterial attach="material-5" roughness={0.8} metalness={0.1} />
     </instancedMesh>
   );
 }

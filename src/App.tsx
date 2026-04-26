@@ -59,14 +59,15 @@ function App() {
   const toggleMute = useGameStore(state => state.toggleMute);
   const score = useGameStore(state => state.score);
   const linesCleared = useGameStore(state => state.linesCleared);
-  const columns = useGameStore(state => state.columns);
-  const rows = useGameStore(state => state.rows);
-  const startingFill = useGameStore(state => state.startingFill);
-  const restartGame = useGameStore(state => state.restartGame);
+  const volume = useGameStore(state => state.volume);
+  const setVolume = useGameStore(state => state.setVolume);
   const RADIUS = columns / (2 * Math.PI);
 
   const [selectedCols, setSelectedCols] = useState(columns);
   const [selectedFill, setSelectedFill] = useState(startingFill);
+
+  // Auto-zoom based on RADIUS
+  const cameraZ = 30 + RADIUS * 1.5;
 
   const speedMultiplier = 1 + Math.min(0.5, Math.floor(linesCleared / 10) * 0.01);
   const dropInterval = 1000 / speedMultiplier;
@@ -114,7 +115,7 @@ function App() {
   return (
     <ErrorBoundary>
       <div {...bind()} style={{ width: '100vw', height: '100vh', backgroundColor: '#111', touchAction: 'none' }}>
-        <Canvas camera={{ position: [0, 5, 45], fov: 45 }} shadows>
+        <Canvas camera={{ position: [0, 5, cameraZ], fov: 45 }} shadows>
           <color attach="background" args={['#0d0d12']} />
           <fog attach="fog" args={['#0d0d12', 45, 120]} />
           
@@ -125,10 +126,10 @@ function App() {
           {/* Front Light for general visibility */}
           <directionalLight position={[0, 0, 50]} intensity={0.6} />
           
-          {/* Main Key Light */}
+          {/* Main Key Light - Reduced intensity to prevent glare */}
           <directionalLight 
             position={[20, 30, 20]} 
-            intensity={1.5} 
+            intensity={1.0} 
             castShadow 
             shadow-mapSize={[1024, 1024]}
           />
@@ -285,11 +286,15 @@ function App() {
               <option value="none" style={{ background: '#1a1a24', color: 'white' }}>Empty</option>
               <option value="v-shape" style={{ background: '#1a1a24', color: 'white' }}>V-Shape</option>
               <option value="random" style={{ background: '#1a1a24', color: 'white' }}>Randomized</option>
+              <option value="spiral" style={{ background: '#1a1a24', color: 'white' }}>Spiral Path</option>
             </select>
           </div>
 
           <button 
-            onClick={() => restartGame(selectedCols, 25, selectedFill)}
+            onClick={() => {
+              import('./utils/audio').then(m => m.startBackgroundMusic());
+              restartGame(selectedCols, 25, selectedFill);
+            }}
             style={{
               padding: '12px',
               background: '#44aaff',
@@ -309,41 +314,85 @@ function App() {
 
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '5px 0' }} />
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              onClick={(e) => { e.stopPropagation(); togglePause(); }}
-              style={{
-                flex: 1,
-                padding: '10px',
-                background: 'rgba(255,255,255,0.1)',
-                color: 'white',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                textTransform: 'uppercase'
-              }}
-            >
-              {paused ? 'Resume' : 'Pause'}
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-              style={{
-                flex: 1,
-                padding: '10px',
-                background: 'rgba(255,255,255,0.1)',
-                color: 'white',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                textTransform: 'uppercase'
-              }}
-            >
-              {isMuted ? 'Unmute' : 'Mute'}
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); togglePause(); }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                }}
+                title={paused ? 'Resume' : 'Pause'}
+              >
+                {paused ? '▶' : '⏸'}
+              </button>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  toggleMute();
+                  import('./utils/audio').then(m => m.updateAudioSettings());
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                }}
+                title={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? '🔇' : '🔊'}
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setVolume(volume - 0.1);
+                  import('./utils/audio').then(m => m.updateAudioSettings());
+                }}
+                style={{
+                  padding: '8px 12px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                -
+              </button>
+              <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${volume * 100}%`, background: '#44aaff', borderRadius: '2px' }} />
+              </div>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setVolume(volume + 0.1);
+                  import('./utils/audio').then(m => m.updateAudioSettings());
+                }}
+                style={{
+                  padding: '8px 12px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
       </div>

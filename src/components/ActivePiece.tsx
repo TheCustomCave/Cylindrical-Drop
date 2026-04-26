@@ -50,8 +50,13 @@ export function ActivePiece() {
       {blocks.map((b, i) => (
         <mesh key={i} position={[b.x, b.y, b.z]} rotation={[0, b.angle, 0]}>
           <boxGeometry args={[BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE]} />
-          {/* Use bumpMap and roughnessMap to make the stone texture feel tangible */}
+          
+          <meshStandardMaterial attach="material-0" color={b.color} roughness={0.8} metalness={0.1} />
+          <meshStandardMaterial attach="material-1" color={b.color} roughness={0.8} metalness={0.1} />
+          <meshStandardMaterial attach="material-2" color={b.color} roughness={0.8} metalness={0.1} />
+          <meshStandardMaterial attach="material-3" color={b.color} roughness={0.8} metalness={0.1} />
           <meshStandardMaterial 
+            attach="material-4"
             map={stoneTexture} 
             bumpMap={stoneTexture}
             bumpScale={0.15}
@@ -60,6 +65,7 @@ export function ActivePiece() {
             roughness={0.8} 
             metalness={0.1} 
           />
+          <meshStandardMaterial attach="material-5" color={b.color} roughness={0.8} metalness={0.1} />
         </mesh>
       ))}
     </group>
